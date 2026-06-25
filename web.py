@@ -14,7 +14,7 @@ app = Flask(__name__)
 # ⭐ hCaptcha Configuration
 # ============================================
 HCAPTCHA_SECRET_KEY = ""
-HCAPTCHA_SITE_KEY = "2546a4d2-70e2-4078-9a38-e790da06b9a6"
+HCAPTCHA_SITE_KEY = "5002f800-070a-4aea-b58a-395c9632217c"
 
 # ============================================
 # ⭐ Expired Link Redirect URL (আপনার লিংক দিন)
