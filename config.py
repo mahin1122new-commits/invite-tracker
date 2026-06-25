@@ -26,7 +26,7 @@ def get_local_ip():
 LOCAL_IP = get_local_ip()
 REDIRECT_URI = f"https://invite-tracker-production-7071.up.railway.app/oauth2/callback"
 
-print(f"🌐 আপনার লোকাল IP: {LOCAL_IP}")
+print(f"🌐 আপনার লোকাল IP: https://invite-tracker-production-7071.up.railway.app/")
 print(f"🔗 Redirect URI: {REDIRECT_URI}")
 print(f"🆔 Client ID: {CLIENT_ID}")
 print(f"📌 Guild ID: {GUILD_ID}")
