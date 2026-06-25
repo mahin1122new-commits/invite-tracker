@@ -13,7 +13,9 @@ app = Flask(__name__)
 # ============================================
 # ⭐ hCaptcha Configuration
 # ============================================
-HCAPTCHA_SECRET_KEY = ""
+import os
+
+HCAPTCHA_SECRET_KEY = os.getenv("HCAPTCHA_SECRET_KEY")
 HCAPTCHA_SITE_KEY = "5002f800-070a-4aea-b58a-395c9632217c"
 
 # ============================================
@@ -514,5 +516,4 @@ def run_flask():
     print(f"🔁 Expired links will redirect to: {EXPIRED_REDIRECT_URL}")
     print("="*60)
     print("SECRET:", repr(HCAPTCHA_SECRET_KEY))
-    print("CAPTCHA RESPONSE:", request.form.get("captcha_key"))
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
