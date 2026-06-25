@@ -502,7 +502,7 @@ def oauth2_callback():
 # ⭐ Flask Run Function
 # ============================================
 def run_flask():
-    print(f"🚀 Flask সার্ভার চালু হচ্ছে: https://invite-tracker-production-7071.up.railway.app/:5000")
+    print(f"🚀 Flask সার্ভার চালু হচ্ছে: https://invite-tracker-production-7071.up.railway.app:5000")
     print(f"🔗 Redirect URI: {REDIRECT_URI}")
     print(f"📌 Guild ID: {GUILD_ID}")
     print(f"📌 Verified Role ID: {VERIFIED_ROLE_ID}")
