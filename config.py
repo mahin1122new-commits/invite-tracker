@@ -24,7 +24,7 @@ def get_local_ip():
         return "127.0.0.1"
 
 LOCAL_IP = get_local_ip()
-REDIRECT_URI = f"http://{LOCAL_IP}:{FLASK_PORT}/oauth2/callback"
+REDIRECT_URI = f"https://invite-tracker-production-7071.up.railway.app/oauth2/callback"
 
 print(f"🌐 আপনার লোকাল IP: {LOCAL_IP}")
 print(f"🔗 Redirect URI: {REDIRECT_URI}")
