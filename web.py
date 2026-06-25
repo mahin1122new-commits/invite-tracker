@@ -4,7 +4,7 @@ import base64
 import time
 import requests
 import datetime
-from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, LOCAL_IP, GUILD_ID, VERIFIED_ROLE_ID, BOT_TOKEN
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,  GUILD_ID, VERIFIED_ROLE_ID, BOT_TOKEN
 from html_template import VERIFY_PAGE_HTML
 from verify_template import VERIFICATION_SUCCESS_HTML
 
