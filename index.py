@@ -1,7 +1,7 @@
 # index.py
 import threading
 import time
-from config import BOT_TOKEN, LOCAL_IP, REDIRECT_URI, FLASK_PORT
+from config import BOT_TOKEN, REDIRECT_URI, FLASK_PORT
 from bot import bot
 from web import run_flask
 
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("🤖 Discord বট + Flask সার্ভার চালু হচ্ছে...")
     print("=" * 60)
-    print(f"🌐 আপনার লোকাল IP: {LOCAL_IP}")
+    print(f"🌐 আপনার লোকাল IP: https://invite-tracker-production-7071.up.railway.app/")
     print(f"🔗 Redirect URI: {REDIRECT_URI}")
     print(f"🔌 Flask Port: {FLASK_PORT}")
     print("=" * 60)
