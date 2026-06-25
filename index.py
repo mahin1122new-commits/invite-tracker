@@ -10,7 +10,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("🤖 Discord বট + Flask সার্ভার চালু হচ্ছে...")
     print("=" * 60)
-    print(f"🌐 আপনার লোকাল IP: https://invite-tracker-production-7071.up.railway.app/")
+    print(f"🌐 আপনার লোকাল IP: https://invite-tracker-production-7071.up.railway.app")
     print(f"🔗 Redirect URI: {REDIRECT_URI}")
     print(f"🔌 Flask Port: {FLASK_PORT}")
     print("=" * 60)
