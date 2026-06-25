@@ -1,5 +1,6 @@
 # config.py
 import socket
+import os 
 
 # ============= কনফিগারেশন =============
 BOT_TOKEN = os.environ.get("BOT_TOKEN") 
