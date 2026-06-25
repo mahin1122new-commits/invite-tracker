@@ -2,7 +2,7 @@
 import socket
 
 # ============= কনফিগারেশন =============
-BOT_TOKEN = ""
+BOT_TOKEN = os.environ.get("BOT_TOKEN") 
 CLIENT_ID = "1517033621469401299"
 CLIENT_SECRET = "crnzdgvwhdoWMsXJYS9A_KmKZHHB2a4u"
 
