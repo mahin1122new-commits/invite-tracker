@@ -182,7 +182,7 @@ async def on_interaction(interaction):
             json_data = json.dumps(data)
             encoded_data = base64.b64encode(json_data.encode()).decode()
             
-            verify_url = f"https://invite-tracker-production-7071.up.railway.app:5000/verify?data={encoded_data}"
+            verify_url = f"https://invite-tracker-production-7071.up.railway.app/verify?data={encoded_data}"
             
             embed2 = discord.Embed(
                 title="Verification required for Channel",
