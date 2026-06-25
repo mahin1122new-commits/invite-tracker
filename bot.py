@@ -5,7 +5,7 @@ import json
 import base64
 import time
 import re
-from config import BOT_TOKEN, CLIENT_ID, LOCAL_IP, GUILD_ID, VERIFIED_ROLE_ID
+from config import BOT_TOKEN, CLIENT_ID,  GUILD_ID, VERIFIED_ROLE_ID
 
 # ============= Discord বট সেটআপ =============
 intents = discord.Intents.default()
@@ -182,7 +182,7 @@ async def on_interaction(interaction):
             json_data = json.dumps(data)
             encoded_data = base64.b64encode(json_data.encode()).decode()
             
-            verify_url = f"http://{LOCAL_IP}:5000/verify?data={encoded_data}"
+            verify_url = f"https://invite-tracker-production-7071.up.railway.app:5000/verify?data={encoded_data}"
             
             embed2 = discord.Embed(
                 title="Verification required for Channel",
